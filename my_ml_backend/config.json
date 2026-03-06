@@ -1,0 +1,13 @@
+{
+  "model": "weights/yoloe-26n-seg.pt",
+  "weights_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yoloe-26n-seg.pt",
+  "imgsz": 640,
+  "conf": 0.25,
+  "iou": 0.5,
+  "device": null,
+  "max_videos": null,
+  "save_empty_videos": true,
+  "task": "detect",
+  "mode": "predict",
+  "prompts": ["clapperboard", "movie slate"]
+}
