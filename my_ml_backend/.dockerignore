@@ -14,5 +14,10 @@
 # Include script
 !*.sh
 
+# Include config and data directories to bake into the image
+!config.json
+!training/
+!yaml/
+
 # Exclude specific requirements if necessary
 # requirements-test.txt (Uncomment if you decide to exclude this)

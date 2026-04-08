@@ -48,6 +48,9 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
 
 COPY . .
 
+# Copy training config to /training (root level, outside WORKDIR)
+COPY training/ /training
+
 EXPOSE 9090
 
 CMD gunicorn --preload --bind :$PORT --workers $WORKERS --threads $THREADS --timeout 0 _wsgi:app
