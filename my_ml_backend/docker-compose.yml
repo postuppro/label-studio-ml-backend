@@ -40,4 +40,3 @@ services:
       - "./weights:/app/weights"
       - "./yaml:/app/yaml"
       - "/Users/a.honnalgere/Projects/slate-annotation-label-studio/data:/data"
-      - "../test_frames:/app/test_frames"
