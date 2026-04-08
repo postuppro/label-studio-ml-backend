@@ -39,21 +39,33 @@ class _MockResult:
 
 class _MockYOLO:
     def __init__(self, *args, **kwargs):
-        self.names = {0: "clapperboard"}
+        self.names = {0: "clapperboard", 1: "movie slate"}
         self._classes = []
 
     def set_classes(self, classes):
         self._classes = classes
 
     def predict(self, **kwargs):
-        boxes = _MockBoxes(
-            xyxy=[
+        active = (self._classes or ["clapperboard"])[0]
+        if active == "clapperboard":
+            xyxy = [
                 [10.0, 10.0, 110.0, 110.0],
                 [12.0, 12.0, 112.0, 112.0],
-            ],
-            conf=[0.9, 0.8],
-            cls=[0, 0],
-        )
+            ]
+            conf = [0.9, 0.8]
+            cls = [0, 0]
+        elif active == "movie slate":
+            xyxy = [
+                [11.0, 11.0, 111.0, 111.0],
+            ]
+            conf = [0.85]
+            cls = [1]
+        else:
+            xyxy = []
+            conf = []
+            cls = []
+
+        boxes = _MockBoxes(xyxy=xyxy, conf=conf, cls=cls)
         result = _MockResult(boxes=boxes, orig_shape=(200, 200), names=self.names)
         return [result]
 
@@ -80,6 +92,10 @@ def test_predict_nms_respects_config_iou(client, monkeypatch, configured_iou, ex
             "conf": 0.25,
             "iou": configured_iou,
             "device": None,
+            "task": None,
+            "mode": None,
+            "prompt_mode": "batch",
+            "prefer_image_fs": False,
             "prompts": ["clapperboard"],
         },
     )
@@ -130,3 +146,68 @@ def test_predict_nms_respects_config_iou(client, monkeypatch, configured_iou, ex
     assert region0["value"]["y"] == 5.0
     assert region0["value"]["width"] == 50.0
     assert region0["value"]["height"] == 50.0
+
+
+@pytest.mark.parametrize(
+    "configured_iou,expected_regions",
+    [
+        (0.99, 3),
+        (0.50, 1),
+    ],
+)
+def test_predict_prompt_mode_per_prompt_merges_then_nms(
+    client, monkeypatch, configured_iou, expected_regions
+):
+    import model as model_module
+
+    monkeypatch.setattr(model_module, "YOLO", _MockYOLO)
+    monkeypatch.setattr(model_module, "resolve_model_path", lambda *_args, **_kwargs: "mock.pt")
+    monkeypatch.setattr(model_module.os.path, "exists", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(
+        model_module,
+        "load_backend_config",
+        lambda *_args, **_kwargs: {
+            "model": "weights/yoloe-26n-seg.pt",
+            "imgsz": 640,
+            "conf": 0.25,
+            "iou": configured_iou,
+            "device": None,
+            "task": None,
+            "mode": None,
+            "prompt_mode": "per_prompt",
+            "prefer_image_fs": False,
+            "prompts": ["clapperboard", "movie slate"],
+        },
+    )
+
+    request = {
+        "tasks": [
+            {
+                "id": 1,
+                "data": {
+                    "image": "/tmp/fake.jpg",
+                },
+            }
+        ],
+        "project": "1.1",
+        "label_config": """
+        <View>
+          <Image name=\"image\" value=\"$image\"/>
+          <RectangleLabels name=\"label\" toName=\"image\">
+            <Label value=\"clapperboard\"/>
+            <Label value=\"movie slate\"/>
+          </RectangleLabels>
+        </View>
+        """,
+    }
+
+    response = client.post(
+        "/predict",
+        data=json.dumps(request),
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    payload = json.loads(response.data)
+
+    regions = payload["results"][0]["result"]
+    assert len(regions) == expected_regions

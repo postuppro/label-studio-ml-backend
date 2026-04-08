@@ -1,5 +1,5 @@
 {
-  "model": "weights/yoloe-26n-seg.pt",
+  "base_model": "./weights/yoloe-26n-seg.pt",
   "weights_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yoloe-26n-seg.pt",
   "imgsz": 640,
   "conf": 0.25,
@@ -9,5 +9,7 @@
   "save_empty_videos": true,
   "task": "detect",
   "mode": "predict",
+  "prompt_mode": "batch",
+  "prefer_image_fs": true,
   "prompts": ["clapperboard", "movie slate"]
 }

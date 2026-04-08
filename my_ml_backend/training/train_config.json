@@ -1,0 +1,15 @@
+{
+  "data_root": "/data",
+  "train_epochs": 20,
+  "train_batch": 16,
+  "train_freeze": null,
+  "train_val_ratio": 0.1,
+  "train_seed": 1337,
+  "train_unify_label": "movie slate",
+  "train_init_weights": "./weights/yoloe-26n-seg.pt",
+  "train_weights_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yoloe-26n-seg.pt",
+  "train_yoloe_yaml": "./yaml/custom_slate_yoloe.yaml",
+  "train_dataset_prefix": "slates",
+  "train_dataset_version": "v1",
+  "train_linear_probe": false
+}

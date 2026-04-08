@@ -36,6 +36,48 @@ from label_studio_ml.api import init_app
 from model import NewModel
 
 
+def _register_model_approval_routes(app):
+    from flask import jsonify, request
+    from label_studio_ml.exceptions import exception_handler
+
+    @app.route('/models/active', methods=['POST'])
+    @exception_handler
+    def active_model():
+        data = request.json or {}
+        project = str(data.get('project') or '')
+        project_id = project.split('.', 1)[0] if project else None
+        label_config = data.get('label_config')
+
+        model = NewModel(project_id=project_id, label_config=label_config)
+        return jsonify(model.get_active_model_info())
+
+    @app.route('/models/approve', methods=['POST'])
+    @exception_handler
+    def approve_model():
+        data = request.json or {}
+        project = str(data.get('project') or '')
+        project_id = project.split('.', 1)[0] if project else None
+        label_config = data.get('label_config')
+        job_id = data.get('job_id')
+
+        if not job_id:
+            return jsonify({'error': 'job_id is required'}), 400
+
+        model = NewModel(project_id=project_id, label_config=label_config)
+        return jsonify(model.approve_model(job_id))
+
+    @app.route('/models/reset', methods=['POST'])
+    @exception_handler
+    def reset_model():
+        data = request.json or {}
+        project = str(data.get('project') or '')
+        project_id = project.split('.', 1)[0] if project else None
+        label_config = data.get('label_config')
+
+        model = NewModel(project_id=project_id, label_config=label_config)
+        return jsonify(model.reset_active_model())
+
+
 _DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 
 
@@ -117,9 +159,11 @@ if __name__ == "__main__":
         model = NewModel(**kwargs)
 
     app = init_app(model_class=NewModel, basic_auth_user=args.basic_auth_user, basic_auth_pass=args.basic_auth_pass)
+    _register_model_approval_routes(app)
 
     app.run(host=args.host, port=args.port, debug=args.debug)
 
 else:
     # for uWSGI use
     app = init_app(model_class=NewModel)
+    _register_model_approval_routes(app)
